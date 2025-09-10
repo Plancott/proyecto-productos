@@ -1,6 +1,5 @@
 package com.nttdata.dockerized.postgresql;
 
-
 import com.nttdata.dockerized.postgresql.exception.ProductoNoFoundException;
 import com.nttdata.dockerized.postgresql.exception.RangeInvalidException;
 import com.nttdata.dockerized.postgresql.model.entity.Categoria;
@@ -10,15 +9,19 @@ import com.nttdata.dockerized.postgresql.repository.ProductoRepository;
 import com.nttdata.dockerized.postgresql.service.ProductoServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class ProductoServiceImplTest {
 
     @Mock
@@ -35,7 +38,6 @@ class ProductoServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         categoria = new Categoria();
         categoria.setId(1L);
         categoria.setNombre("Electrónica");
@@ -88,13 +90,13 @@ class ProductoServiceImplTest {
 
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
         when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria));
-        when(productoRepository.save(any(Producto.class))).thenReturn(producto);
+        when(productoRepository.save(any(Producto.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Producto result = productoService.update(1L, actualizado, 1L);
 
         assertNotNull(result);
-        assertEquals("Tablet", producto.getNombre());
-        assertEquals(800.0, producto.getPrecio());
+        assertEquals("Tablet", result.getNombre());
+        assertEquals(800.0, result.getPrecio());
     }
 
     @Test
@@ -128,8 +130,6 @@ class ProductoServiceImplTest {
         assertEquals(1, result.size());
         assertEquals(1500.0, result.get(0).getPrecio());
     }
-
-
 
     @Test
     void testFindByIdThrowsProductoNoFoundException() {
