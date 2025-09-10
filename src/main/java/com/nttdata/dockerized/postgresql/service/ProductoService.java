@@ -11,4 +11,5 @@ public interface ProductoService {
     Producto update(Long id, Producto producto, Long categoriaId);
     void delete(Long id);
     List<Producto> findByCategoria(Long categoriaId);
+    List<Producto> findByPrecioBetween(Double min, Double max);
 }

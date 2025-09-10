@@ -1,5 +1,7 @@
 package com.nttdata.dockerized.postgresql.service;
 
+import com.nttdata.dockerized.postgresql.exception.CategoriaNoFoundException;
+import com.nttdata.dockerized.postgresql.exception.ProductoNoFoundException;
 import com.nttdata.dockerized.postgresql.model.entity.Categoria;
 import com.nttdata.dockerized.postgresql.repository.CategoriaRepository;
 import org.springframework.stereotype.Service;
@@ -23,7 +25,8 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     public Categoria findById(Long id) {
-        return categoriaRepository.findById(id).orElse(null);
+        return categoriaRepository.findById(id)
+                .orElseThrow(() -> new CategoriaNoFoundException(id));
     }
 
     @Override
@@ -33,17 +36,18 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     public Categoria update(Long id, Categoria categoria) {
-        Optional<Categoria> existenteOpt = categoriaRepository.findById(id);
-        if (existenteOpt.isEmpty()) {
-            return null;
-        }
-        Categoria existente = existenteOpt.get();
+        Categoria existente = categoriaRepository.findById(id)
+                .orElseThrow(() -> new CategoriaNoFoundException(id));
         existente.setNombre(categoria.getNombre());
         return categoriaRepository.save(existente);
     }
 
     @Override
     public void delete(Long id) {
+        if (!categoriaRepository.existsById(id)) {
+            throw new CategoriaNoFoundException(id);
+        }
         categoriaRepository.deleteById(id);
     }
+
 }

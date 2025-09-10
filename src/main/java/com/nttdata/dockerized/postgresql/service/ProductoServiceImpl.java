@@ -1,5 +1,8 @@
 package com.nttdata.dockerized.postgresql.service;
 
+import com.nttdata.dockerized.postgresql.exception.CategoriaNoFoundException;
+import com.nttdata.dockerized.postgresql.exception.ProductoNoFoundException;
+import com.nttdata.dockerized.postgresql.exception.RangeInvalidException;
 import com.nttdata.dockerized.postgresql.mapper.ProductoMapper;
 import com.nttdata.dockerized.postgresql.model.entity.Categoria;
 import com.nttdata.dockerized.postgresql.model.entity.Producto;
@@ -17,7 +20,8 @@ public class ProductoServiceImpl implements ProductoService {
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
 
-    public ProductoServiceImpl(ProductoRepository productoRepository, CategoriaRepository categoriaRepository) {
+    public ProductoServiceImpl(ProductoRepository productoRepository,
+                               CategoriaRepository categoriaRepository) {
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
     }
@@ -29,38 +33,32 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public Producto findById(Long id) {
-        return productoRepository.findById(id).orElse(null);
+        return productoRepository.findById(id)
+                .orElseThrow(() -> new ProductoNoFoundException(id));
     }
 
     @Override
     public Producto save(Producto producto, Long categoriaId) {
         if (categoriaId != null) {
-            Optional<Categoria> categoriaAux = categoriaRepository.findById(categoriaId);
-            if (categoriaAux.isEmpty()) {
-                return null;
-            }
-            producto.setCategoria(categoriaAux.get());
+            Categoria categoria = categoriaRepository.findById(categoriaId)
+                    .orElseThrow(() -> new CategoriaNoFoundException(categoriaId));
+            producto.setCategoria(categoria);
         }
         return productoRepository.save(producto);
     }
 
     @Override
     public Producto update(Long id, Producto producto, Long categoriaId) {
-        Optional<Producto> existenteAux = productoRepository.findById(id);
-        if (existenteAux.isEmpty()) {
-            return null;
-        }
+        Producto existente = productoRepository.findById(id)
+                .orElseThrow(() -> new ProductoNoFoundException(id));
 
-        Producto existente = existenteAux.get();
         existente.setNombre(producto.getNombre());
         existente.setPrecio(producto.getPrecio());
 
         if (categoriaId != null) {
-            Optional<Categoria> categoriaAux = categoriaRepository.findById(categoriaId);
-            if (categoriaAux.isEmpty()) {
-                return null;
-            }
-            existente.setCategoria(categoriaAux.get());
+            Categoria categoria = categoriaRepository.findById(categoriaId)
+                    .orElseThrow(() -> new CategoriaNoFoundException(categoriaId));
+            existente.setCategoria(categoria);
         }
 
         return productoRepository.save(existente);
@@ -68,11 +66,25 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public void delete(Long id) {
+        if (!productoRepository.existsById(id)) {
+            throw new ProductoNoFoundException(id);
+        }
         productoRepository.deleteById(id);
     }
 
     @Override
     public List<Producto> findByCategoria(Long categoriaId) {
+        if (!categoriaRepository.existsById(categoriaId)) {
+            throw new CategoriaNoFoundException(categoriaId);
+        }
         return productoRepository.findByCategoriaId(categoriaId);
+    }
+
+    @Override
+    public List<Producto> findByPrecioBetween(Double min, Double max) {
+        if (min > max) {
+            throw new RangeInvalidException(min, max);
+        }
+        return productoRepository.findByPrecioBetween(min, max);
     }
 }
